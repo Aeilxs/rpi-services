@@ -1,3 +1,14 @@
+(patience) {
+	reverse_proxy {args[0]} {
+		lb_try_duration 15s
+		lb_try_interval 500ms
+
+		transport http {
+			dial_timeout 5s
+		}
+	}
+}
+
 vaultwarden.home {
 	tls internal
 
@@ -11,7 +22,7 @@ vaultwarden.home {
 
 jellyfin.home {
 	tls internal
-	reverse_proxy jellyfin:8096
+	import patience jellyfin:8096
 }
 
 qbit.home {
@@ -41,7 +52,7 @@ adguard.home {
 
 grafana.home {
 	tls internal
-	reverse_proxy grafana:3000
+	import patience grafana:3000
 }
 
 prometheus.home {
