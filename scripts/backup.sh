@@ -1,7 +1,7 @@
 #!/bin/bash
 # -----------------------------------------------------------------
 # COLD BACKUP - FULL STACK
-# (Managed by Ansible - DO NOT EDIT)
+# Managed by Ansible - DO NOT EDIT
 # Strategy: Down -> Absolute Tar -> Up
 # Targets: /srv/services, /etc/wireguard, /etc/ssh
 # -----------------------------------------------------------------
@@ -9,12 +9,14 @@
 # --- Config ---
 SERVICES_DIR="/srv/services"
 BACKUP_DIR="/mnt/storage/backups"
+STACK_SCRIPT="/srv/scripts/stack.sh"
 TIMESTAMP=$(date +%Y%m%d_%H%M)
 FILENAME="homelab_prod_$TIMESTAMP.tar.gz"
 LATEST_LINK="$BACKUP_DIR/latest.tar.gz"
 LOG_FILE="/var/log/homelab-backup.log"
 LOCK_FILE="/tmp/homelab-backup.lock"
 RETENTION_COUNT=3
+
 
 # --- Requirements ---
 [[ $EUID -ne 0 ]] && echo "Error: Must be run as root." && exit 1
@@ -28,21 +30,11 @@ log() {
 cleanup_exit() {
     if [ -f "$LOCK_FILE" ]; then
         log "INFO" "Interruption or crash detected. Ensuring services are up..."
-        manage_stack "start"
+        $STACK_SCRIPT up -d > /dev/null 2>&1
         rm -f "$LOCK_FILE"
     fi
 }
 trap cleanup_exit SIGINT SIGTERM SIGQUIT
-
-manage_stack() {
-    local action=$1
-    log "INFO" "Executing docker compose $action on all stacks..."
-    for stack in "$SERVICES_DIR"/*/; do
-        if [ -f "${stack}docker-compose.yaml" ]; then
-            docker compose -f "${stack}docker-compose.yaml" "$action" > /dev/null 2>&1
-        fi
-    done
-}
 
 if [ -f "$LOCK_FILE" ]; then
     log "WARN" "Backup already in progress. Exiting."
@@ -53,7 +45,7 @@ touch "$LOCK_FILE"
 log "INFO" "Starting backup process"
 
 # 1. Stop all services to freeze DBs
-manage_stack "down"
+$STACK_SCRIPT down > /dev/null 2>&1
 
 # 2. Create Absolute Archive
 log "INFO" "Creating absolute archive: $FILENAME"
@@ -67,7 +59,7 @@ tar -czf "$BACKUP_DIR/$FILENAME" \
     "/etc/ssh"
 
 # 3. Restore services
-manage_stack "up -d"
+$STACK_SCRIPT up -d > /dev/null 2>&1
 
 # 4. Finalize symlink and perms
 ln -sf "$BACKUP_DIR/$FILENAME" "$LATEST_LINK"
