@@ -1,0 +1,27 @@
+services:
+  caddy:
+    container_name: caddy
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./data:/data
+      - ./config:/config
+    networks:
+      - proxy_caddy
+    labels:
+      - "logging=promtail"
+      - "service_name=caddy"
+    healthcheck:
+      test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:2019/metrics" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+networks:
+  proxy_caddy:
+    external: true

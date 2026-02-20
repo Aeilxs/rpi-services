@@ -1,0 +1,28 @@
+services:
+  vaultwarden:
+    container_name: vaultwarden
+    image: vaultwarden/server:1.35.0
+    restart: unless-stopped
+    volumes:
+      - ./data:/data
+    environment:
+      DOMAIN: "https://vaultwarden.home"
+      WEBSOCKET_ENABLED: "true"
+      ROCKET_ADDRESS: 0.0.0.0
+      ROCKET_PORT: 80
+      SIGNUPS_ALLOWED: "false"
+    networks:
+      - proxy_caddy
+    labels:
+      - "logging=promtail"
+      - "service_name=vaultwarden"
+    healthcheck:
+      test: [ "CMD", "/healthcheck.sh" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+networks:
+  proxy_caddy:
+    external: true

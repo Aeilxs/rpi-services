@@ -1,0 +1,145 @@
+name: monitoring
+
+services:
+  cadvisor:
+    container_name: cadvisor
+    image: gcr.io/cadvisor/cadvisor:v0.55.1
+    restart: unless-stopped
+    ports:
+      - "8081:8080" # Avoid conflict with qbittorrent
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks: [ monitoring_net ]
+    labels:
+      - "logging=promtail"
+      - "service_name=cadvisor"
+    healthcheck:
+      # HTTP check for /healthz endpoint funny guys at Google
+      # see: https://github.com/google/cadvisor/blob/255cff7808a7d23802852e6fd9a12320b1035bf1/deploy/Dockerfile#L68
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:8080/healthz" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    devices:
+      - /dev/kmsg
+    privileged: true
+
+  node-exporter:
+    container_name: node-exporter
+    image: prom/node-exporter:v1.10.2
+    restart: unless-stopped
+
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/host:ro,rslave
+    networks: [ monitoring_net ]
+    labels:
+      - "logging=promtail"
+      - "service_name=node-exporter"
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9100/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/host'
+      - '--collector.thermal_zone'
+      - '--collector.processes'
+
+  loki:
+    container_name: loki
+    image: grafana/loki:3.6.5
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./config/loki.yaml:/config.yaml:ro
+      - ./appdata/loki:/loki
+    networks: [ monitoring_net ]
+    labels:
+      - "logging=promtail"
+      - "service_name=loki"
+
+  promtail:
+    container_name: promtail
+    image: grafana/promtail:3.6.5
+    restart: unless-stopped
+    volumes:
+      - /var/log:/var/log:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./config/promtail.yaml:/etc/promtail/config.yaml:ro
+      - ./appdata/promtail:/var/lib/promtail
+    networks: [ monitoring_net, proxy_caddy ]
+    labels:
+      - "logging=promtail"
+      - "service_name=promtail"
+    healthcheck:
+      test:
+        - "CMD-SHELL"
+        - |
+          bash -c 'printf "GET / HTTP/1.1\n\n" > /dev/tcp/127.0.0.1/9080; exit $?'
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command: -config.file=/etc/promtail/config.yaml
+
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v3.8.1
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - ./appdata/prometheus:/prometheus
+    networks: [ monitoring_net, proxy_caddy ]
+    labels:
+      - "logging=promtail"
+      - "service_name=prometheus"
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://localhost:9090/-/healthy" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:12.3.3
+    restart: unless-stopped
+    ports:
+      - "3002:3000" # Avoid conflict with adguard
+    volumes:
+      - ./appdata/grafana:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    networks: [ monitoring_net, proxy_caddy ]
+    labels:
+      - "logging=promtail"
+      - "service_name=grafana"
+    healthcheck:
+      # TCP socket check for port 3000
+      test: [ "CMD-SHELL", "nc -z localhost 3000 || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  monitoring_net:
+    name: monitoring_net
+    driver: bridge
+  proxy_caddy:
+    external: true
