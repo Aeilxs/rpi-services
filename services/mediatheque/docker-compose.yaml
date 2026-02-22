@@ -1,6 +1,7 @@
 name: mediatheque
 
 services:
+
   gluetun:
     container_name: gluetun
     image: qmcgaw/gluetun:v3
@@ -22,8 +23,20 @@ services:
       - "service_name=gluetun"
     cap_add:
       - NET_ADMIN
+      - NET_RAW
+      - CHOWN
+      - SETUID
+      - SETGID
+    cap_drop:
+      - ALL
     devices:
       - /dev/net/tun:/dev/net/tun
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:exec
+      - /run:exec
+      - /var/run:exec
 
   qbittorrent:
     container_name: qbittorrent
@@ -49,7 +62,20 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    cap_drop:
+      - ALL
     network_mode: "service:gluetun"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:exec
+      - /run:exec
+      - /var/run:exec
 
   prowlarr:
     container_name: prowlarr
@@ -72,6 +98,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    cap_drop:
+      - ALL
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:exec
+      - /run:exec
+      - /var/run:exec
 
   sonarr:
     container_name: sonarr
@@ -95,6 +134,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    cap_drop:
+      - ALL
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:exec
+      - /run:exec
+      - /var/run:exec
 
   radarr:
     container_name: radarr
@@ -118,6 +170,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    cap_drop:
+      - ALL
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:exec
+      - /run:exec
+      - /var/run:exec
 
   jellyfin:
     container_name: jellyfin
@@ -140,6 +205,15 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    cap_drop:
+      - ALL
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp:exec
+      - /run:exec
+      - /var/run:exec
 
 networks:
   mediatheque_net:
