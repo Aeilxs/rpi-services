@@ -145,5 +145,6 @@ networks:
   mediatheque_net:
     name: mediatheque_net
     driver: bridge
+    external: true
   proxy_caddy:
     external: true

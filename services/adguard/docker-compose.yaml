@@ -13,6 +13,7 @@ services:
       - ./data:/opt/adguardhome/work
     networks:
       - proxy_caddy
+      - adguard_net
     labels:
       - "logging=promtail"
       - "service_name=adguard"
@@ -26,6 +27,31 @@ services:
       - NET_ADMIN
       - NET_RAW
 
+  adguard-exporter:
+    # No healthcheck, distroless/scratch.
+    container_name: adguard-exporter
+    image: ebrianne/adguard-exporter:v1.14
+    restart: unless-stopped
+    environment:
+      - ADGUARD_PROTOCOL=http
+      - ADGUARD_HOSTNAME=adguard
+      - ADGUARD_PORT=3000
+      - ADGUARD_USERNAME=${ADGUARD_USER}
+      - ADGUARD_PASSWORD=${ADGUARD_PASSWORD}
+      - INTERVAL=15s
+    networks:
+      - adguard_net
+      - monitoring_net
+    labels:
+      - "logging=promtail"
+      - "service_name=adguard-exporter"
+
 networks:
+  adguard_net:
+    driver: bridge
+    name: adguard_net
+    external: true
   proxy_caddy:
+    external: true
+  monitoring_net:
     external: true
