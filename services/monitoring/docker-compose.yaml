@@ -69,7 +69,7 @@ services:
     image: grafana/loki:3.6.5
     restart: unless-stopped
     volumes:
-      - ./config/loki.yaml:/config.yaml:ro
+      - ./config/loki.yaml:/etc/loki/local-config.yaml:ro
       - ./appdata/loki:/loki
     networks: [ monitoring_net ]
     labels:
