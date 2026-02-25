@@ -1,0 +1,58 @@
+# https://github.com/Tecnativa/docker-socket-proxy
+
+services:
+  docker-proxy:
+    container_name: docker-proxy
+    image: tecnativa/docker-socket-proxy:v0.4.2
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      # ALLOWED
+      - CONTAINERS=1
+      - IMAGES=1
+      - NETWORKS=1
+      - VOLUMES=1
+      - INFO=1
+      - TASKS=1
+      # DENIED
+      - POST=0
+      - PUT=0
+      - DELETE=0
+      - AUTH=0
+      - SECRETS=0
+      - EXEC=0
+      - BUILD=0
+    networks:
+      - socket_net
+    labels:
+      - "logging=promtail"
+      - "service_name=docker-proxy"
+    healthcheck:
+      test: [ "CMD", "wget", "--spider", "-q", "http://127.0.0.1:2375/version" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+        reservations:
+          memory: 32M
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /run:exec
+      - /tmp
+
+networks:
+  socket_net:
+    external: true

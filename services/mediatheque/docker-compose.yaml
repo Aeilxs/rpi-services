@@ -29,12 +29,19 @@ services:
       - SETGID
     cap_drop:
       - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
     devices:
       - /dev/net/tun:/dev/net/tun
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:exec
+      - /tmp:exec,mode=1777 # standard permissions for /tmp
+      - /tmp/gluetun:exec,mode=1777
       - /run:exec
       - /var/run:exec
 
@@ -68,6 +75,12 @@ services:
       - SETGID
     cap_drop:
       - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 256M
     network_mode: "service:gluetun"
     read_only: true
     security_opt:
@@ -104,6 +117,12 @@ services:
       - SETGID
     cap_drop:
       - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -140,6 +159,12 @@ services:
       - SETGID
     cap_drop:
       - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 256M
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -176,6 +201,12 @@ services:
       - SETGID
     cap_drop:
       - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 256M
     read_only: true
     security_opt:
       - no-new-privileges:true
@@ -205,13 +236,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+      - DAC_OVERRIDE
+      - FOWNER
     cap_drop:
       - ALL
-    read_only: true
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 512M
     security_opt:
       - no-new-privileges:true
     tmpfs:
-      - /tmp:exec
+      - /tmp:exec,mode=1777
       - /run:exec
       - /var/run:exec
 

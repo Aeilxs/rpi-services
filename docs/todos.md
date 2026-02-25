@@ -41,7 +41,10 @@
 ## Phase 5 — Sécurité & Audit (Hardening)
 
 - Objectif : Niveau de sécurité "prod".
-[ ] Audit des permissions : Rootless containers quand c'est possible
-[ ] Protection périmétrique : Fail2ban (SSH) et CrowdSec (Caddy)
-[ ] Vulnerability Scanning : Trivy pour scanner les images fixées
-[ ] Network Hardening : Isolation des réseaux Docker (Frontend/Backend)
+[x] Audit des permissions : Rootless containers quand c'est possible
+- Doing
+~~[ ] Protection périmétrique : Fail2ban (SSH) et CrowdSec (Caddy)~~
+- fail2ban inutile, pas de port 22 ouvert et SSH en key-only
+- crowdsec tldr: usine à gaz pour pas grand chose, pas de client, ça impliquerait qu'un de mes devices est compromis pour que ça ait un intérêt, et dans ce cas là j'ai d'autres problèmes plus urgents à régler 😭
+[x] Vulnerability Scanning : Trivy pour scanner les images fixées
+[x] Network Hardening : Isolation des réseaux Docker

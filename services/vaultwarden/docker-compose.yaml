@@ -1,7 +1,7 @@
 services:
   vaultwarden:
     container_name: vaultwarden
-    image: vaultwarden/server:1.35.0
+    image: vaultwarden/server:1.35.3
     restart: unless-stopped
     volumes:
       - ./data:/data
@@ -22,6 +22,24 @@ services:
       timeout: 10s
       retries: 3
       start_period: 30s
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    cap_drop:
+      - ALL
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 64M
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
 
 networks:
   proxy_caddy:

@@ -22,8 +22,12 @@ scrape_configs:
   # Scrape Docker container logs
   - job_name: docker
     docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
+      - host: tcp://docker-proxy:2375
+        refresh_interval: 15s
+        # Scrape only containers with label 'logging=promtail'
+        filters:
+          - name: label
+            values: ["logging=promtail"]
     relabel_configs:
       # Only keep containers with label `logging=promtail` (all of them for now)
       - source_labels: [__meta_docker_container_label_logging]
